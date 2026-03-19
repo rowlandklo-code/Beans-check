@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Olivia's Special Gobe · beans & plantains</title>
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- jsPDF for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS (XLSX) for CSV export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* RED, WHITE, DARK BLUE theme with BEANS & PLANTAINS background */
+        body {
+            background-image: url('https://images.unsplash.com/photo-1604904612715-47bf9d9bc670?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+            position: relative;
+            color: #0a1929;
+        }
+        
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(240, 242, 245, 0.85);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 4px solid #d32f2f;
+            margin-bottom: 1.5rem;
+            background-color: #0a1929;
+            color: white;
+            border-radius: 0 0 20px 20px;
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 2px 2px 0 #d32f2f;
+        }
+        .logo i {
+            color: #d32f2f;
+            margin-right: 8px;
+        }
+        .cart-badge {
+            background: #d32f2f;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 600;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+        }
+        .tab-btn {
+            background: white;
+            border: 2px solid #0a1929;
+            font-size: 1.4rem;
+            font-weight: 600;
+            padding: 0.8rem 2.2rem;
+            border-radius: 40px 40px 0 0;
+            cursor: pointer;
+            color: #0a1929;
+            opacity: 0.9;
+            transition: 0.2s;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.05);
+        }
+        .tab-btn.active {
+            background-color: #d32f2f;
+            color: white;
+            border-color: #d32f2f;
+            opacity: 1;
+        }
+        .tab-btn i { margin-right: 6px; }
+
+        .tab-panel { display: none; animation: fade 0.25s; }
+        .tab-panel.active-panel { display: block; }
+        @keyframes fade { from {opacity:0.2;} to {opacity:1;} }
+
+        /* Password Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 25, 41, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+        .modal-box {
+            background: white;
+            padding: 3rem 2.5rem;
+            border-radius: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            border: 3px solid #d32f2f;
+        }
+        .modal-box h2 {
+            color: #0a1929;
+            margin-bottom: 1.5rem;
+            font-size: 2rem;
+        }
+        .modal-box input {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            font-size: 1.2rem;
+            border: 2px solid #0a1929;
+            border-radius: 60px;
+            margin-bottom: 1.5rem;
+            outline: none;
+        }
+        .modal-box button {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        .modal-box button:hover { background: #b71c1c; }
+        .close-modal {
+            margin-top: 1rem;
+            color: #0a1929;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* backend panels */
+        .backend-grid {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+        .orders-dashboard {
+            flex: 2;
+            min-width: 500px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 32px;
+            padding: 2rem 1.8rem;
+            border: 2px solid #0a1929;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
+        }
+        .full-editor {
+            flex: 1.4;
+            min-width: 380px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 32px;
+            padding: 2rem 1.8rem;
+            border: 2px solid #0a1929;
+            backdrop-filter: blur(4px);
+        }
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            border-left: 8px solid #d32f2f;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            color: #0a1929;
+        }
+
+        .order-row {
+            background: #f0f2f5;
+            border-radius: 20px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 6px solid #d32f2f;
+        }
+        .order-info {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .order-info span {
+            background: white;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #0a1929;
+        }
+        .payment-badge {
+            background: #0a1929;
+            color: white;
+            font-weight: 600;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+        }
+
+        .export-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+            flex-wrap: wrap;
+        }
+        .export-btn {
+            background: #0a1929;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1rem;
+        }
+        .export-btn.csv { background: #0a1929; }
+        .export-btn.pdf { background: #d32f2f; }
+        .export-btn:hover { opacity: 0.9; }
+
+        .item-row {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            background: #f0f2f5;
+            padding: 0.8rem 1rem;
+            border-radius: 50px;
+            align-items: center;
+        }
+        .item-row input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border-radius: 30px;
+            border: 1px solid #0a1929;
+            background: white;
+        }
+        .price-input { max-width: 100px; }
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: #d32f2f;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+        .add-new-btn {
+            background: #0a1929;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 0.6rem 1.8rem;
+            font-weight: 600;
+            margin: 0.5rem 0 1rem;
+            cursor: pointer;
+        }
+        .save-menu-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 0.8rem 2rem;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 1rem;
+            cursor: pointer;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 1.5rem 0 2rem;
+        }
+        .menu-item {
+            background: rgba(255,255,255,0.95);
+            border-radius: 24px;
+            padding: 1.8rem 1.2rem;
+            text-align: center;
+            border: 2px solid #0a1929;
+            backdrop-filter: blur(4px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .price { font-size: 1.8rem; font-weight: 700; color:#d32f2f; }
+        .add-btn {
+            background: #0a1929;
+            color: white;
+            border-radius: 40px;
+            padding: 0.6rem 1.5rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            font-weight: 600;
+        }
+        .add-btn:hover { background: #d32f2f; }
+
+        .extras-panel {
+            background: rgba(255,255,255,0.95);
+            border-radius: 32px;
+            padding: 1.8rem 2rem;
+            margin: 1.5rem 0;
+            border: 2px solid #d32f2f;
+            backdrop-filter: blur(4px);
+        }
+        .extra-item {
+            background: #f0f2f5;
+            border-radius: 60px;
+            padding: 0.5rem 1.5rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0.3rem;
+        }
+        .extra-item input[type="checkbox"] { accent-color: #d32f2f; }
+
+        .order-form-box, .cart-side {
+            background: rgba(255,255,255,0.95);
+            border-radius: 32px;
+            padding: 2rem;
+            border: 2px solid #0a1929;
+            backdrop-filter: blur(4px);
+        }
+        .cart-side { background: rgba(10,25,41,0.95); color: white; }
+        .cart-total { color: #d32f2f; }
+        .btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 0.8rem 2rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .footer {
+            background: #0a1929;
+            color: white;
+            border-radius: 40px 40px 0 0;
+            padding: 2rem;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        .toast-msg {
+            background: #d32f2f;
+            color: white;
+            padding: 0.7rem;
+            border-radius: 40px;
+            margin-top: 1rem;
+            opacity: 0;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .visible-toast { opacity: 1; }
+    </style>
+</head>
+<body>
+    <!-- password modal -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal-box">
+            <h2><i class="fas fa-lock" style="color:#d32f2f;"></i> Olivia's backend</h2>
+            <input type="password" id="modalPassword" placeholder="enter password" autofocus>
+            <button id="modalUnlockBtn"><i class="fas fa-sign-in-alt"></i> unlock</button>
+            <div class="close-modal" id="closeModalBtn">cancel</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="navbar">
+            <div class="logo"><i class="fas fa-bowl-food"></i> Olivia's Special Gobe</div>
+            <div><span class="cart-badge" id="globalCartIndicator"><i class="fas fa-basket-shopping"></i> cart <span id="globalCartCount">0</span></span></div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tabOrderBtn"><i class="fas fa-utensils"></i> order</button>
+            <button class="tab-btn" id="tabBackendBtn"><i class="fas fa-gear"></i> backend</button>
+        </div>
+
+        <!-- ORDER PANEL (public, cash only) -->
+        <div id="orderPanel" class="tab-panel active-panel">
+            <div class="menu-header">
+                <h2 class="section-title">🍲 Olivia's specials</h2>
+            </div>
+            <div class="menu-grid" id="customerMenuGrid"></div>
+
+            <div class="extras-panel">
+                <div class="extras-title" style="font-size:1.8rem;"><i class="fas fa-plus-circle" style="color:#d32f2f;"></i> add extras</div>
+                <div class="extras-grid" id="extrasContainer"></div>
+            </div>
+
+            <div class="order-row-flex" style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                <div class="order-form-box" style="flex:2;">
+                    <h2><i class="fas fa-truck"></i> delivery (cash only)</h2>
+                    <form id="customerOrderForm">
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label>full name</label>
+                            <input type="text" id="custName" placeholder="Your name" style="width:100%; padding:0.8rem; border-radius:40px; border:1px solid #0a1929;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:1rem;">
+                            <label>address</label>
+                            <input type="text" id="custAddress" placeholder="Delivery address" style="width:100%; padding:0.8rem; border-radius:40px; border:1px solid #0a1929;">
+                        </div>
+                        <input type="hidden" name="custPayment" value="cash">
+                        <div style="background:#f0f2f5; padding:0.8rem; border-radius:40px; margin-bottom:1rem; text-align:center; font-weight:600;">
+                            <i class="fas fa-money-bill-wave" style="color:#d32f2f;"></i> payment: cash only
+                        </div>
+                        <button type="button" class="btn" id="placeOrderBtn" style="width:100%;">place order (cash)</button>
+                        <div id="orderToast" class="toast-msg"></div>
+                    </form>
+                </div>
+                <div class="cart-side" style="flex:1;">
+                    <h3>your cart</h3>
+                    <div id="cartItemsList"></div>
+                    <div class="cart-total" id="cartTotalDisplay">GH₵ 0.00</div>
+                    <button class="btn" id="checkoutScrollBtn" style="width:100%;">review order</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- BACKEND PANEL -->
+        <div id="backendPanel" class="tab-panel">
+            <div class="backend-grid">
+                <div class="orders-dashboard">
+                    <h2 class="section-title"><i class="fas fa-clipboard-list"></i> orders (cash only)</h2>
+                    <div class="export-bar">
+                        <button class="export-btn csv" id="exportCsvBtn"><i class="fas fa-file-csv"></i> export CSV (Excel)</button>
+                        <button class="export-btn pdf" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> export PDF</button>
+                    </div>
+                    <div id="backendOrdersList">loading...</div>
+                </div>
+
+                <div class="full-editor">
+                    <h2 class="section-title"><i class="fas fa-pen"></i> manage menu & extras</h2>
+                    <div class="editor-section">
+                        <div class="editor-subtitle" style="font-weight:600;"><i class="fas fa-utensils"></i> food items</div>
+                        <div id="menuEditorRows"></div>
+                        <button class="add-new-btn" id="addMenuItemBtn"><i class="fas fa-plus"></i> add item</button>
+                    </div>
+                    <div class="editor-section">
+                        <div class="editor-subtitle"><i class="fas fa-pepper-hot"></i> extras</div>
+                        <div id="extrasEditorRows"></div>
+                        <button class="add-new-btn" id="addExtraBtn"><i class="fas fa-plus"></i> add extra</button>
+                    </div>
+                    <button class="save-menu-btn" id="saveAllChangesBtn"><i class="fas fa-save"></i> publish changes</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">Olivia's Special Gobe · beans & plantains · cash only · backend password protected</div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- DATA with EXACT menu and extras from user ----------
+            let menuItems = [
+                { id: 1, name: 'Beans, plantain, oil, gari and egg', price: 45.00 },
+                { id: 2, name: 'Boiled Yam with Kontomire Stew', price: 40.00 }
+            ];
+
+            let extras = [
+                { id: 101, name: 'Gari', price: 3.00 },
+                { id: 102, name: 'Oil', price: 5.00 },
+                { id: 103, name: 'Fish Small', price: 10.00 },
+                { id: 104, name: 'Fish Large', price: 20.00 },
+                { id: 105, name: 'Avocado', price: 15.00 },
+                { id: 106, name: 'Rice', price: 15.00 },
+                { id: 107, name: 'Fried Plantain', price: 10.00 },
+                { id: 108, name: 'Fried Potato', price: 10.00 },
+                { id: 109, name: 'Fried Yam', price: 10.00 },
+                { id: 110, name: 'Boiled Yam', price: 10.00 },
+                { id: 111, name: 'Kontomire Stew', price: 10.00 }
+            ];
+
+            let orders = [
+                { id: 2001, customer: 'Ama', items: 'Beans, plantain, oil, gari and egg + Fish Large', total: 65.00, payment: 'cash', address: 'East Legon' },
+                { id: 2002, customer: 'Kofi', items: 'Boiled Yam with Kontomire Stew + Avocado', total: 55.00, payment: 'cash', address: 'Madina' }
+            ];
+
+            let cart = [];
+            let backendUnlocked = false;
+
+            // ----- MODAL & PASSWORD -----
+            const modal = document.getElementById('passwordModal');
+            const modalPassword = document.getElementById('modalPassword');
+            const modalUnlockBtn = document.getElementById('modalUnlockBtn');
+            const closeModal = document.getElementById('closeModalBtn');
+            const tabBackendBtn = document.getElementById('tabBackendBtn');
+            const tabOrderBtn = document.getElementById('tabOrderBtn');
+            const orderPanel = document.getElementById('orderPanel');
+            const backendPanel = document.getElementById('backendPanel');
+
+            tabBackendBtn.addEventListener('click', function() {
+                if (backendUnlocked) {
+                    setActiveTab('backend');
+                } else {
+                    modal.style.display = 'flex';
+                    modalPassword.value = '';
+                    modalPassword.focus();
+                }
+            });
+
+            modalUnlockBtn.addEventListener('click', function() {
+                if (modalPassword.value === '123456789') {
+                    modal.style.display = 'none';
+                    backendUnlocked = true;
+                    setActiveTab('backend');
+                    showToast(orderToast, '✅ backend unlocked');
+                } else {
+                    alert('incorrect password');
+                }
+            });
+
+            closeModal.addEventListener('click', function() {
+                modal.style.display = 'none';
+                setActiveTab('order');
+            });
+
+            modalPassword.addEventListener('keypress', (e) => {
+                if(e.key === 'Enter') modalUnlockBtn.click();
+            });
+
+            function setActiveTab(tab) {
+                if (tab === 'order') {
+                    tabOrderBtn.classList.add('active');
+                    tabBackendBtn.classList.remove('active');
+                    orderPanel.classList.add('active-panel');
+                    backendPanel.classList.remove('active-panel');
+                } else {
+                    tabBackendBtn.classList.add('active');
+                    tabOrderBtn.classList.remove('active');
+                    backendPanel.classList.add('active-panel');
+                    orderPanel.classList.remove('active-panel');
+                    renderBackendOrders();
+                }
+            }
+
+            tabOrderBtn.addEventListener('click', () => setActiveTab('order'));
+
+            // ----- DOM elements -----
+            const customerMenuGrid = document.getElementById('customerMenuGrid');
+            const extrasContainer = document.getElementById('extrasContainer');
+            const cartItemsList = document.getElementById('cartItemsList');
+            const cartTotalDisplay = document.getElementById('cartTotalDisplay');
+            const globalCartCount = document.getElementById('globalCartCount');
+            const placeOrderBtn = document.getElementById('placeOrderBtn');
+            const orderToast = document.getElementById('orderToast');
+            const custName = document.getElementById('custName');
+            const custAddress = document.getElementById('custAddress');
+            const menuEditorRows = document.getElementById('menuEditorRows');
+            const extrasEditorRows = document.getElementById('extrasEditorRows');
+            const addMenuItemBtn = document.getElementById('addMenuItemBtn');
+            const addExtraBtn = document.getElementById('addExtraBtn');
+            const saveAllBtn = document.getElementById('saveAllChangesBtn');
+            const backendOrdersList = document.getElementById('backendOrdersList');
+            const exportCsvBtn = document.getElementById('exportCsvBtn');
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            const checkoutScrollBtn = document.getElementById('checkoutScrollBtn');
+
+            // ----- helper functions -----
+            function showToast(el, msg) {
+                el.innerText = msg;
+                el.classList.add('visible-toast');
+                setTimeout(() => el.classList.remove('visible-toast'), 2000);
+            }
+
+            function renderCustomerMenu() {
+                let html = '';
+                menuItems.forEach(item => {
+                    html += `<div class="menu-item" data-name="${item.name}" data-price="${item.price}">
+                        <i class="fas fa-utensils" style="font-size:2.8rem; color:#d32f2f;"></i>
+                        <h3>${item.name}</h3>
+                        <div class="price">GH₵ ${item.price.toFixed(2)}</div>
+                        <button class="add-btn add-to-cart-btn"><i class="fas fa-cart-plus"></i> add</button>
+                    </div>`;
+                });
+                customerMenuGrid.innerHTML = html;
+                document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const div = e.target.closest('.menu-item');
+                        addToCart(div.dataset.name, parseFloat(div.dataset.price));
+                    });
+                });
+            }
+
+            function renderCustomerExtras() {
+                let html = '';
+                extras.forEach(extra => {
+                    html += `<div class="extra-item">
+                        <input type="checkbox" class="extra-checkbox" data-extra-name="${extra.name}" data-extra-price="${extra.price}" id="extra-${extra.id}">
+                        <label for="extra-${extra.id}">${extra.name} <span style="color:#d32f2f;">+GH₵ ${extra.price.toFixed(2)}</span></label>
+                    </div>`;
+                });
+                extrasContainer.innerHTML = html;
+            }
+
+            function renderBackendOrders() {
+                if (!orders.length) { backendOrdersList.innerHTML = '<div class="order-row">no orders</div>'; return; }
+                let html = '';
+                orders.slice().reverse().forEach(o => {
+                    html += `<div class="order-row">
+                        <div class="order-info"><span>${o.customer}</span><span>${o.address.substring(0,12)}…</span><span>${o.items}</span><span>GH₵ ${o.total.toFixed(2)}</span></div>
+                        <div class="payment-badge">${o.payment}</div>
+                    </div>`;
+                });
+                backendOrdersList.innerHTML = html;
+            }
+
+            function renderMenuEditor() {
+                let rows = '';
+                menuItems.forEach((item) => {
+                    rows += `<div class="item-row" data-id="${item.id}">
+                        <input type="text" class="edit-item-name" value="${item.name}">
+                        <input type="number" step="0.01" class="edit-item-price" value="${item.price.toFixed(2)}" class="price-input">
+                        <button class="remove-item-btn" onclick="removeMenuItem(this)"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                });
+                menuEditorRows.innerHTML = rows;
+            }
+
+            function renderExtrasEditor() {
+                let rows = '';
+                extras.forEach((extra) => {
+                    rows += `<div class="item-row" data-id="${extra.id}">
+                        <input type="text" class="edit-extra-name" value="${extra.name}">
+                        <input type="number" step="0.01" class="edit-extra-price" value="${extra.price.toFixed(2)}" class="price-input">
+                        <button class="remove-item-btn" onclick="removeExtra(this)"><i class="fas fa-trash"></i></button>
+                    </div>`;
+                });
+                extrasEditorRows.innerHTML = rows;
+            }
+
+            window.removeMenuItem = function(btn) { btn.closest('.item-row').remove(); }
+            window.removeExtra = function(btn) { btn.closest('.item-row').remove(); }
+
+            addMenuItemBtn.addEventListener('click', () => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `<input type="text" class="edit-item-name" value="new dish"><input type="number" step="0.01" class="edit-item-price" value="30.00"><button class="remove-item-btn" onclick="removeMenuItem(this)"><i class="fas fa-trash"></i></button>`;
+                menuEditorRows.appendChild(row);
+            });
+
+            addExtraBtn.addEventListener('click', () => {
+                const row = document.createElement('div');
+                row.className = 'item-row';
+                row.innerHTML = `<input type="text" class="edit-extra-name" value="new extra"><input type="number" step="0.01" class="edit-extra-price" value="5.00"><button class="remove-item-btn" onclick="removeExtra(this)"><i class="fas fa-trash"></i></button>`;
+                extrasEditorRows.appendChild(row);
+            });
+
+            saveAllBtn.addEventListener('click', () => {
+                const menuRows = document.querySelectorAll('#menuEditorRows .item-row');
+                let newMenu = [];
+                menuRows.forEach((r, i) => {
+                    let name = r.querySelector('.edit-item-name').value.trim() || `item-${i}`;
+                    let price = parseFloat(r.querySelector('.edit-item-price').value) || 1.0;
+                    newMenu.push({ id: Date.now()+i, name, price });
+                });
+                menuItems = newMenu;
+
+                const extraRows = document.querySelectorAll('#extrasEditorRows .item-row');
+                let newExtras = [];
+                extraRows.forEach((r, i) => {
+                    let name = r.querySelector('.edit-extra-name').value.trim() || `extra-${i}`;
+                    let price = parseFloat(r.querySelector('.edit-extra-price').value) || 0.5;
+                    newExtras.push({ id: Date.now()+i+100, name, price });
+                });
+                extras = newExtras;
+
+                renderCustomerMenu();
+                renderCustomerExtras();
+                renderMenuEditor();
+                renderExtrasEditor();
+                showToast(orderToast, '✅ changes published');
+            });
+
+            function addToCart(name, price) {
+                let extraTotal = 0;
+                let extraDesc = [];
+                document.querySelectorAll('#extrasContainer .extra-checkbox:checked').forEach(cb => {
+                    extraTotal += parseFloat(cb.dataset.extraPrice);
+                    extraDesc.push(cb.dataset.extraName);
+                });
+                const finalPrice = price + extraTotal;
+                const finalName = name + (extraDesc.length ? ' + ' + extraDesc.join(', ') : '');
+                cart.push({ name: finalName, price: finalPrice, qty: 1 });
+                renderCart();
+                showToast(orderToast, '✓ added to cart');
+            }
+
+            function renderCart() {
+                if (!cart.length) { 
+                    cartItemsList.innerHTML = '<div class="cart-item">empty</div>'; 
+                    cartTotalDisplay.innerText = 'GH₵ 0.00'; 
+                    globalCartCount.innerText = '0'; 
+                    return; 
+                }
+                let total = 0, qty = 0, html = '';
+                cart.forEach(c => { 
+                    total += c.price * c.qty; 
+                    qty += c.qty; 
+                    html += `<div class="cart-item"><span>${c.qty}× ${c.name}</span><span>GH₵ ${(c.price*c.qty).toFixed(2)}</span></div>`; 
+                });
+                cartItemsList.innerHTML = html;
+                cartTotalDisplay.innerText = `GH₵ ${total.toFixed(2)}`;
+                globalCartCount.innerText = qty;
+            }
+
+            placeOrderBtn.addEventListener('click', () => {
+                let name = custName.value.trim(), addr = custAddress.value.trim();
+                if (!name || !addr) { showToast(orderToast, '❌ name & address'); return; }
+                if (!cart.length) { showToast(orderToast, 'cart empty'); return; }
+                let payment = 'cash';
+                let items = cart.map(i => `${i.qty}×${i.name}`).join(', ').substring(0,60);
+                let total = cart.reduce((acc,i) => acc + i.price * i.qty, 0);
+                orders.push({ id: Date.now(), customer: name, items, total, payment, address: addr });
+                renderBackendOrders();
+                cart = []; renderCart();
+                showToast(orderToast, '✅ order placed (cash)');
+                custName.value = ''; custAddress.value = '';
+            });
+
+            exportCsvBtn.addEventListener('click', () => {
+                const wsData = [['OrderID', 'Customer', 'Items', 'Total (GH₵)', 'Payment', 'Address']];
+                orders.forEach(o => wsData.push([o.id, o.customer, o.items, o.total, o.payment, o.address]));
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+                XLSX.writeFile(wb, 'olivias_orders.csv');
+            });
+
+            exportPdfBtn.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                doc.setFontSize(16);
+                doc.text('Olivia\'s Gobe Orders', 14, 20);
+                doc.setFontSize(10);
+                let y = 30;
+                orders.forEach((o) => {
+                    doc.text(`${o.id} | ${o.customer} | ${o.items} | GH₵ ${o.total} | ${o.payment}`, 14, y);
+                    y += 7;
+                    if (y > 280) { doc.addPage(); y = 20; }
+                });
+                doc.save('olivias_orders.pdf');
+            });
+
+            checkoutScrollBtn.addEventListener('click', () => {
+                document.querySelector('.order-form-box').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            renderCustomerMenu(); renderCustomerExtras(); renderMenuEditor(); renderExtrasEditor(); renderBackendOrders(); renderCart();
+        })();
+    </script>
+</body>
+</html>
